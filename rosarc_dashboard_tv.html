@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RosArc · Dashboard TV</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0a0c10; color: #e8eaf0; font-family: system-ui, sans-serif; padding: 16px; min-height: 100vh; overflow-x: hidden; }
+  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid #252a38; }
+  .logo { font-size: 28px; font-weight: 900; letter-spacing: 4px; color: #7c3aed; }
+  .logo span { color: #4cc9f0; }
+  .clock { font-size: 36px; font-weight: 700; color: #4cc9f0; font-family: monospace; }
+  .date-str { font-size: 13px; color: #6b7280; text-align: right; margin-top: 2px; }
+  .sync { font-size: 10px; color: #6b7280; text-align: right; margin-top: 2px; }
+  .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #6b7280; margin-right: 4px; }
+  .dot.ok { background: #06d6a0; }
+
+  .metrics { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin-bottom: 16px; }
+  .metric { background: #12151c; border: 1px solid #252a38; border-radius: 10px; padding: 14px 12px; }
+  .metric-label { font-size: 9px; color: #6b7280; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 6px; }
+  .metric-val { font-size: 30px; font-weight: 700; line-height: 1; }
+  .metric-sub { font-size: 10px; color: #6b7280; margin-top: 4px; }
+
+  .row2 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .row3 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .card { background: #12151c; border: 1px solid #252a38; border-radius: 10px; padding: 14px; }
+  .card-title { font-size: 9px; color: #6b7280; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; border-bottom: 1px solid #1a1e28; padding-bottom: 8px; }
+
+  .bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; }
+  .bar-label { font-size: 12px; color: #e8eaf0; width: 140px; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bar-track { flex: 1; height: 10px; background: #1a1e28; border-radius: 5px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 5px; }
+  .bar-val { font-size: 12px; color: #6b7280; width: 40px; text-align: right; flex-shrink: 0; }
+
+  .op-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #1a1e28; }
+  .op-row:last-child { border-bottom: none; }
+  .op-avatar { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #fff; flex-shrink: 0; }
+  .medal { font-size: 16px; width: 22px; text-align: center; }
+
+  .ses-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid #1a1e28; }
+  .ses-row:last-child { border-bottom: none; }
+
+  .pie-wrap { position: relative; height: 160px; }
+  .pie-legend { display: flex; gap: 10px; margin-top: 10px; font-size: 11px; color: #6b7280; flex-wrap: wrap; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; margin-right: 4px; flex-shrink: 0; }
+
+  .err-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid #1a1e28; }
+  .err-row:last-child { border-bottom: none; }
+  .err-badge { background: rgba(255,71,87,.15); color: #FF4757; border: 1px solid rgba(255,71,87,.3); border-radius: 20px; padding: 2px 8px; font-size: 11px; font-weight: 700; }
+
+  .no-data { color: #6b7280; font-size: 12px; padding: 20px 0; text-align: center; }
+
+  @media (max-width: 1200px) {
+    .metrics { grid-template-columns: repeat(3, 1fr); }
+    .row2 { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="logo">ROS<span>-ARC</span></div>
+    <div style="font-size:11px;color:#6b7280;margin-top:2px;">Dashboard rendimiento · Depósito ROSARC</div>
+  </div>
+  <div style="text-align:right">
+    <div class="clock" id="clk">--:--:--</div>
+    <div class="date-str" id="dt"></div>
+    <div class="sync"><span class="dot" id="dot"></span><span id="sync-txt">Conectando...</span></div>
+  </div>
+</div>
+
+<!-- Métricas principales -->
+<div class="metrics">
+  <div class="metric">
+    <div class="metric-label">Piq/min · promedio</div>
+    <div class="metric-val" style="color:#06d6a0" id="m-piqmin">—</div>
+    <div class="metric-sub">general hoy</div>
+  </div>
+  <div class="metric">
+    <div class="metric-label">Efectividad</div>
+    <div class="metric-val" style="color:#ffd166" id="m-efect">—</div>
+    <div class="metric-sub">OK / total líneas</div>
+  </div>
+  <div class="metric">
+    <div class="metric-label">Tiempo prom · conso</div>
+    <div class="metric-val" style="color:#4cc9f0" id="m-tiempo">—</div>
+    <div class="metric-sub">minutos</div>
+  </div>
+  <div class="metric">
+    <div class="metric-label">Consolidados</div>
+    <div class="metric-val" style="color:#7c3aed" id="m-cons">—</div>
+    <div class="metric-sub" id="m-sub">hoy</div>
+  </div>
+  <div class="metric">
+    <div class="metric-label">Líneas procesadas</div>
+    <div class="metric-val" style="color:#ff8c42" id="m-lineas">—</div>
+    <div class="metric-sub">total acumulado</div>
+  </div>
+  <div class="metric">
+    <div class="metric-label">Errores totales</div>
+    <div class="metric-val" style="color:#FF4757" id="m-errs">—</div>
+    <div class="metric-sub">en control</div>
+  </div>
+</div>
+
+<!-- Fila 2 -->
+<div class="row2">
+  <div class="card">
+    <div class="card-title">Piqueos por minuto · operario</div>
+    <div id="piq-bars"><div class="no-data">Cargando...</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Distribución resultados</div>
+    <div class="pie-wrap"><canvas id="pieChart" role="img" aria-label="Distribución OK errores pendientes">Cargando datos...</canvas></div>
+    <div class="pie-legend" id="pie-legend"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Operario con más errores</div>
+    <div id="err-ops"><div class="no-data">Cargando...</div></div>
+  </div>
+</div>
+
+<!-- Fila 3 -->
+<div class="row3">
+  <div class="card">
+    <div class="card-title">Ranking · piqueos/min</div>
+    <div id="ranking"><div class="no-data">Cargando...</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Últimas sesiones</div>
+    <div id="sesiones"><div class="no-data">Cargando...</div></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const SHEET_URL = 'https://script.google.com/macros/s/AKfycbyFgyn7X_rDZ_qboQwoZatRFttzlvnYhmxWU55xlyQHVsJuKSU2QrTY7ZGx8lvqjOQ/exec';
+const OP_COLORS = ['#FF4757','#2ED573','#1E90FF','#FFA502','#A55EEA','#00D2D3','#FF6B81','#26de81'];
+const MEDALS = ['🥇','🥈','🥉'];
+
+let pieInst = null;
+
+function initClock() {
+  function tick() {
+    const n = new Date();
+    document.getElementById('clk').textContent = n.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    document.getElementById('dt').textContent = n.toLocaleDateString('es-AR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+  }
+  tick(); setInterval(tick, 1000);
+}
+
+function setSyncOk(ok, ts) {
+  document.getElementById('dot').className = 'dot' + (ok ? ' ok' : '');
+  document.getElementById('sync-txt').textContent = ok ? 'Actualizado ' + ts : 'Sin conexión · datos demo';
+}
+
+function renderPie(ok, err, pend) {
+  const ctx = document.getElementById('pieChart').getContext('2d');
+  if (pieInst) pieInst.destroy();
+  const total = ok + err + pend || 1;
+  pieInst = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['OK','Errores','Pendientes'],
+      datasets: [{ data: [ok,err,pend], backgroundColor: ['#06d6a0','#FF4757','#6b7280'], borderWidth: 0, hoverOffset: 4 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { display: false } } }
+  });
+  document.getElementById('pie-legend').innerHTML = [
+    ['#06d6a0','OK',ok],['#FF4757','Errores',err],['#6b7280','Pendientes',pend]
+  ].map(([c,l,v]) =>
+    `<span style="display:flex;align-items:center;gap:4px;"><span class="legend-dot" style="background:${c}"></span>${l}: ${v} (${Math.round(v/total*100)}%)</span>`
+  ).join('');
+}
+
+function renderPiqBars(ops) {
+  const cont = document.getElementById('piq-bars');
+  if (!ops.length) { cont.innerHTML = '<div class="no-data">Sin datos</div>'; return; }
+  const max = Math.max(...ops.map(o => o.piqMin), 1);
+  cont.innerHTML = ops.map((op,i) => {
+    const pct = Math.round((op.piqMin / max) * 100);
+    const color = OP_COLORS[i % OP_COLORS.length];
+    return `<div class="bar-row">
+      <div class="bar-label">${op.nombre}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color};"></div></div>
+      <div class="bar-val">${op.piqMin.toFixed(1)}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderRanking(ops) {
+  const cont = document.getElementById('ranking');
+  if (!ops.length) { cont.innerHTML = '<div class="no-data">Sin datos</div>'; return; }
+  const sorted = [...ops].sort((a,b) => b.piqMin - a.piqMin);
+  cont.innerHTML = sorted.map((op,i) => {
+    const color = OP_COLORS[ops.findIndex(o=>o.nombre===op.nombre) % OP_COLORS.length];
+    return `<div class="op-row">
+      <div class="medal">${MEDALS[i] || (i+1)}</div>
+      <div class="op-avatar" style="background:${color};">${op.nombre.charAt(0)}</div>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:600;">${op.nombre}</div>
+        <div style="font-size:10px;color:#6b7280;">${op.dur} min · ${op.piqueos} piqueos</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:16px;font-weight:700;color:${color};">${op.piqMin.toFixed(1)}</div>
+        <div style="font-size:9px;color:#6b7280;">piq/min</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderErrOps(ops) {
+  const cont = document.getElementById('err-ops');
+  const conErrs = ops.filter(o => o.errores > 0).sort((a,b) => b.errores - a.errores);
+  if (!conErrs.length) { cont.innerHTML = '<div class="no-data">Sin errores registrados</div>'; return; }
+  cont.innerHTML = conErrs.map((op,i) => {
+    const color = OP_COLORS[ops.findIndex(o=>o.nombre===op.nombre) % OP_COLORS.length];
+    const pctErr = op.total > 0 ? Math.round(op.errores / op.total * 100) : 0;
+    return `<div class="err-row">
+      <div class="op-avatar" style="background:${color};width:30px;height:30px;font-size:11px;">${op.nombre.charAt(0)}</div>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:600;">${op.nombre}</div>
+        <div style="font-size:10px;color:#6b7280;">${pctErr}% de sus líneas</div>
+      </div>
+      <div class="err-badge">${op.errores} err</div>
+    </div>`;
+  }).join('');
+}
+
+function renderSesiones(sesiones) {
+  const cont = document.getElementById('sesiones');
+  if (!sesiones.length) { cont.innerHTML = '<div class="no-data">Sin sesiones</div>'; return; }
+  cont.innerHTML = sesiones.slice(0,6).map(s => {
+    const efect = (s.ok + s.err) > 0 ? Math.round(s.ok / (s.ok + s.err) * 100) : 0;
+    const color = efect >= 95 ? '#06d6a0' : efect >= 80 ? '#ffd166' : '#FF4757';
+    const durStr = s.dur > 0 ? s.dur + ' min' : '—';
+    return `<div class="ses-row">
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:700;">#${s.numero}</div>
+        <div style="font-size:10px;color:#6b7280;">${s.fecha} · ${s.ops} operarios · ${durStr}</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:15px;font-weight:700;color:${color};">${efect}%</div>
+        <div style="font-size:10px;color:#6b7280;">${s.ok} OK / ${s.err} err</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function cargarDatos() {
+  try {
+    const r = await fetch(`${SHEET_URL}?accion=leer_consolidados`);
+    const d = await r.json();
+    const cons = d.consolidados || [];
+
+    if (!cons.length) { usarDemo(); return; }
+
+    let totalOk=0, totalErr=0, totalPend=0, totalLineas=0;
+    let totalDurMin=0, consConDur=0;
+    const opMap = {};
+
+    cons.forEach((c,ci) => {
+      const lines = c.lines || [];
+      const ok  = lines.filter(l=>l.estado==='ok').length;
+      const err = lines.filter(l=>l.estado==='error').length;
+      const pend= lines.filter(l=>!l.estado).length;
+      totalOk   += ok;
+      totalErr  += err;
+      totalPend += pend;
+      totalLineas += lines.length;
+
+      if (c.totalTime) { totalDurMin += Math.round(c.totalTime/60000); consConDur++; }
+
+      (c.activeOps||[]).forEach((op,i) => {
+        const k = op.nombre;
+        if (!opMap[k]) opMap[k] = { nombre:k, piqueos:0, dur:0, errores:0, total:0, colorIdx: i };
+        const dur = op.endTime && op.startTime ? Math.round((Number(op.endTime)-Number(op.startTime))/60000) : 0;
+        opMap[k].piqueos += (op.piqueos || 0);
+        opMap[k].dur     += dur;
+        const divs = op.divisiones || [];
+        const lineasOp = divs.length > 0 ? lines.filter(l=>divs.includes(l.seccion)) : lines;
+        opMap[k].errores += lineasOp.filter(l=>l.estado==='error').length;
+        opMap[k].total   += lineasOp.length;
+      });
+    });
+
+    const efect = (totalOk+totalErr)>0 ? ((totalOk/(totalOk+totalErr))*100).toFixed(1)+'%' : '—';
+    const tiempoProm = consConDur > 0 ? Math.round(totalDurMin/consConDur)+' min' : '—';
+
+    document.getElementById('m-efect').textContent   = efect;
+    document.getElementById('m-tiempo').textContent  = tiempoProm;
+    document.getElementById('m-cons').textContent    = cons.length;
+    document.getElementById('m-lineas').textContent  = totalLineas;
+    document.getElementById('m-errs').textContent    = totalErr;
+
+    const opArr = Object.values(opMap).map(o => ({
+      ...o,
+      piqMin: o.dur > 0 && o.piqueos > 0 ? o.piqueos/o.dur : 0
+    }));
+
+    const avgPiqMin = opArr.filter(o=>o.piqMin>0).reduce((a,o)=>a+o.piqMin,0) / Math.max(opArr.filter(o=>o.piqMin>0).length,1);
+    document.getElementById('m-piqmin').textContent = avgPiqMin > 0 ? avgPiqMin.toFixed(1) : '—';
+
+    renderPie(totalOk, totalErr, totalPend);
+    renderPiqBars(opArr);
+    renderRanking(opArr);
+    renderErrOps(opArr);
+    renderSesiones(cons.map(c=>({
+      numero: c.numero,
+      fecha:  c.fecha,
+      ok:     (c.lines||[]).filter(l=>l.estado==='ok').length,
+      err:    (c.lines||[]).filter(l=>l.estado==='error').length,
+      ops:    (c.activeOps||[]).length,
+      dur:    c.totalTime ? Math.round(c.totalTime/60000) : 0
+    })));
+
+    const ts = new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+    setSyncOk(true, ts);
+
+  } catch(e) {
+    console.warn('Error cargando datos:', e);
+    setSyncOk(false, '');
+    usarDemo();
+  }
+}
+
+function usarDemo() {
+  document.getElementById('m-piqmin').textContent = '1.5';
+  document.getElementById('m-efect').textContent  = '96.4%';
+  document.getElementById('m-tiempo').textContent = '20 min';
+  document.getElementById('m-cons').textContent   = '1';
+  document.getElementById('m-lineas').textContent = '28';
+  document.getElementById('m-errs').textContent   = '1';
+  renderPie(27,1,0);
+  const ops = [
+    { nombre:'PABLO CARMINATTI', piqueos:26, dur:1,  piqMin:26.0, errores:0, total:14 },
+    { nombre:'SEBASTIAN KIERSKI',piqueos:2,  dur:0,  piqMin:0.0,  errores:1, total:14 },
+    { nombre:'ALEJANDRO MARTINO',piqueos:28, dur:20, piqMin:1.4,  errores:0, total:28 },
+    { nombre:'RODRIGO LUCERO',   piqueos:61, dur:38, piqMin:1.6,  errores:0, total:28 },
+  ];
+  renderPiqBars(ops);
+  renderRanking(ops);
+  renderErrOps(ops);
+  renderSesiones([
+    { numero:'78TOK-82903', fecha:'2026-04-15', ok:27, err:1, ops:2, dur:1 },
+    { numero:'CONSO-82892', fecha:'2026-04-14', ok:0,  err:0, ops:2, dur:0 },
+  ]);
+}
+
+initClock();
+cargarDatos();
+setInterval(cargarDatos, 30000);
+</script>
+</body>
+</html>
