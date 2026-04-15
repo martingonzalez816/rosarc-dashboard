@@ -271,7 +271,7 @@ async function cargarDatos() {
       totalPend += pend;
       totalLineas += lines.length;
 
-      if (c.totalTime) { totalDurMin += Math.round(c.totalTime/60000); consConDur++; }
+      const maxEnd = Math.max(...(c.activeOps||[]).map(o=>Number(o.endTime)||0)); const minStart = Math.min(...(c.activeOps||[]).filter(o=>o.startTime).map(o=>Number(o.startTime))); if (c.totalTime) { totalDurMin += Math.round(c.totalTime/60000); consConDur++; } else if (maxEnd > 0 && minStart > 0 && maxEnd > minStart) { totalDurMin += Math.round((maxEnd-minStart)/60000); consConDur++; }
 
       (c.activeOps||[]).forEach((op,i) => {
         const k = op.nombre;
@@ -300,7 +300,7 @@ async function cargarDatos() {
       piqMin: o.dur > 0 && o.piqueos > 0 ? o.piqueos/o.dur : 0
     }));
 
-    const avgPiqMin = opArr.filter(o=>o.piqMin>0).reduce((a,o)=>a+o.piqMin,0) / Math.max(opArr.filter(o=>o.piqMin>0).length,1);
+    const opsConPiq = opArr.filter(o=>o.piqMin>0); const avgPiqMin = opsConPiq.length > 0 ? opsConPiq.reduce((a,o)=>a+o.piqMin,0) / opsConPiq.length : 0;
     document.getElementById('m-piqmin').textContent = avgPiqMin > 0 ? avgPiqMin.toFixed(1) : '—';
 
     renderPie(totalOk, totalErr, totalPend);
