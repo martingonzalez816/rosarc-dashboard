@@ -82,9 +82,9 @@ body { background: #0a0c10; color: #e8eaf0; font-family: system-ui, sans-serif; 
     <div class="metric-sub">total acumulado</div>
   </div>
   <div class="metric">
-    <div class="metric-label">Errores totales</div>
+    <div class="metric-label">Errores · armadores</div>
     <div class="metric-val" style="color:#FF4757" id="m-errs">—</div>
-    <div class="metric-sub">en control</div>
+    <div class="metric-sub">errores reales</div>
   </div>
 </div>
 
@@ -99,7 +99,7 @@ body { background: #0a0c10; color: #e8eaf0; font-family: system-ui, sans-serif; 
     <div class="pie-legend" id="pie-legend"></div>
   </div>
   <div class="card">
-    <div class="card-title">Operario con más errores</div>
+    <div class="card-title">Armador con más errores</div>
     <div id="err-ops"><div class="no-data">Cargando...</div></div>
   </div>
 </div>
@@ -186,13 +186,13 @@ function renderRanking(ops) {
   }).join('');
 }
 
-function renderErrOps(ops) {
+function renderErrOps(errMap, opArr) {
   const cont = document.getElementById('err-ops');
-  const conErr = ops.filter(o=>o.errores>0).sort((a,b)=>b.errores-a.errores);
+  const conErr = Object.values(errMap).filter(o=>o.errores>0).sort((a,b)=>b.errores-a.errores);
   if (!conErr.length){cont.innerHTML='<div class="no-data">Sin errores registrados</div>';return;}
   cont.innerHTML = conErr.map((op)=>{
-    const ci = ops.findIndex(o=>o.nombre===op.nombre);
-    const c = COLORS[ci%COLORS.length];
+    const ci = opArr.findIndex(o=>o.nombre===op.nombre);
+    const c = COLORS[Math.max(ci,0)%COLORS.length];
     const pct = op.lineas>0?Math.round(op.errores/op.lineas*100):0;
     return `<div class="err-row">
       <div class="op-avatar" style="background:${c};width:30px;height:30px;font-size:11px;">${op.nombre.charAt(0)}</div>
@@ -227,7 +227,6 @@ function renderSesiones(ses) {
 
 async function cargar() {
   try {
-    // Cargar rendimiento operarios Y consolidados en paralelo
     const [rRend, rCons] = await Promise.all([
       fetch(`${SHEET}?accion=leer_rendimiento`).then(r=>r.json()),
       fetch(`${SHEET}?accion=leer_consolidados`).then(r=>r.json())
@@ -236,14 +235,12 @@ async function cargar() {
     const filas = rRend.operarios || [];
     const cons  = rCons.consolidados || [];
 
-    // ── Agrupar operarios por nombre (pueden tener varias sesiones)
+    // Agrupar operarios por nombre desde Rendimiento_Operarios
     const opMap = {};
-    const nombreIdx = {};
     let idx = 0;
     filas.forEach(f => {
       if (!opMap[f.nombre]) {
-        opMap[f.nombre] = { nombre:f.nombre, piqTotal:0, durTotal:0, sesiones:0 };
-        nombreIdx[f.nombre] = idx++;
+        opMap[f.nombre] = { nombre:f.nombre, piqTotal:0, durTotal:0, sesiones:0, colorIdx: idx++ };
       }
       opMap[f.nombre].piqTotal += f.piqueos;
       opMap[f.nombre].durTotal += f.dur;
@@ -253,34 +250,21 @@ async function cargar() {
     const opArr = Object.values(opMap).map(o=>({
       ...o,
       piqMin: o.durTotal>0 && o.piqTotal>0 ? o.piqTotal/o.durTotal : 0,
-      errores: 0,
-      lineas: 0,
     }));
 
-    // Calcular errores por operario desde líneas de consolidados
-    cons.forEach(c => {
-      (c.lines||[]).forEach(l => {
-        if (l.operario && opMap[l.operario]) {
-          opMap[l.operario].lineas = (opMap[l.operario].lineas||0) + 1;
-          if (l.estado==='error') opMap[l.operario].errores = (opMap[l.operario].errores||0) + 1;
-        }
-      });
-    });
-    opArr.forEach(o => {
-      o.errores = opMap[o.nombre].errores||0;
-      o.lineas  = opMap[o.nombre].lineas||0;
-    });
-
-    // ── Métricas globales desde consolidados
+    // ── Errores por ARMADOR — usar l.operario que ahora es el armador real
+    const errMap = {};
     let totalOk=0, totalErr=0, totalPend=0, totalLineas=0;
     let totalDur=0, consDur=0;
+
     cons.forEach(c => {
       const lines = c.lines||[];
       totalOk   += lines.filter(l=>l.estado==='ok').length;
       totalErr  += lines.filter(l=>l.estado==='error').length;
       totalPend += lines.filter(l=>!l.estado).length;
       totalLineas += lines.length;
-      // Tiempo desde operarios si no hay totalTime
+
+      // Calcular tiempo promedio
       if (c.totalTime) { totalDur += Math.round(c.totalTime/60000); consDur++; }
       else {
         const ends   = (c.activeOps||[]).map(o=>Number(o.endTime)||0).filter(x=>x>0);
@@ -290,28 +274,30 @@ async function cargar() {
           consDur++;
         }
       }
+
+      // Errores por armador — l.operario es quien armó la línea
+      lines.forEach(l => {
+        const armador = l.operario || '—';
+        if (armador === '—' || !armador) return;
+        if (!errMap[armador]) errMap[armador] = { nombre:armador, errores:0, lineas:0 };
+        errMap[armador].lineas++;
+        if (l.estado === 'error') errMap[armador].errores++;
+      });
     });
 
-    // También sumar desde Rendimiento_Operarios para tiempo si no hay consolidados cerrados
+    // Fallback tiempo desde Rendimiento_Operarios
     if (consDur===0 && filas.length>0) {
-      const consSet = {};
-      filas.forEach(f => {
-        if (!consSet[f.consolidado]) consSet[f.consolidado] = { maxEnd:0, minStart:Infinity };
-      });
-      // fallback: promedio de duraciones individuales
       const durs = filas.filter(f=>f.dur>0).map(f=>f.dur);
-      if (durs.length>0) {
-        totalDur = durs.reduce((a,b)=>a+b,0);
-        consDur  = durs.length;
-      }
+      if (durs.length>0) { totalDur = durs.reduce((a,b)=>a+b,0); consDur = durs.length; }
     }
 
     const efect = (totalOk+totalErr)>0 ? ((totalOk/(totalOk+totalErr))*100).toFixed(1)+'%' : '—';
     const tiempoProm = consDur>0 ? Math.round(totalDur/consDur)+' min' : '—';
+    const totalErrArmadores = Object.values(errMap).reduce((a,o)=>a+o.errores,0);
 
     const opsConPiq = opArr.filter(o=>o.piqMin>0);
     const avgPiq = opsConPiq.length>0 ? opsConPiq.reduce((a,o)=>a+o.piqMin,0)/opsConPiq.length : 0;
-    const topOp  = opsConPiq.sort((a,b)=>b.piqMin-a.piqMin)[0];
+    const topOp  = [...opsConPiq].sort((a,b)=>b.piqMin-a.piqMin)[0];
 
     document.getElementById('m-piqmin').textContent     = topOp ? topOp.piqMin.toFixed(1) : '—';
     document.getElementById('m-piqmin-sub').textContent = topOp ? topOp.nombre.split(' ')[0] : 'operario top';
@@ -319,12 +305,12 @@ async function cargar() {
     document.getElementById('m-efect').textContent      = efect;
     document.getElementById('m-tiempo').textContent     = tiempoProm;
     document.getElementById('m-lineas').textContent     = totalLineas;
-    document.getElementById('m-errs').textContent       = totalErr;
+    document.getElementById('m-errs').textContent       = totalErrArmadores;
 
     renderPie(totalOk, totalErr, totalPend);
     renderBars(opArr);
     renderRanking(opArr);
-    renderErrOps(opArr);
+    renderErrOps(errMap, opArr);
     renderSesiones(cons.map(c=>({
       numero: c.numero,
       fecha:  c.fecha,
@@ -338,7 +324,7 @@ async function cargar() {
     setSync(true, ts);
 
   } catch(e) {
-    console.error('Error cargando datos:', e);
+    console.error('Error:', e);
     setSync(false,'');
   }
 }
