@@ -6,8 +6,38 @@
 <title>RosArc · Dashboard TV</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { background: #0a0c10; color: #e8eaf0; font-family: system-ui, sans-serif; padding: 16px; }
-.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; padding-bottom: 12px; border-bottom: 1px solid #252a38; }
+
+html, body {
+  height: 100%;
+  overflow: hidden; /* El scroll lo maneja JS sobre .scroll-container */
+}
+
+body {
+  background: #0a0c10;
+  color: #e8eaf0;
+  font-family: system-ui, sans-serif;
+}
+
+/* ── SCROLL CONTAINER ── */
+.scroll-container {
+  height: 100vh;
+  overflow-y: scroll;
+  scroll-behavior: smooth;
+  padding: 16px;
+  /* Ocultar scrollbar visualmente pero mantener funcional */
+  scrollbar-width: none;
+}
+.scroll-container::-webkit-scrollbar { display: none; }
+
+/* ── HEADER ── */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #252a38;
+}
 .logo { font-size: 28px; font-weight: 900; letter-spacing: 4px; color: #7c3aed; }
 .logo span { color: #4cc9f0; }
 .clock { font-size: 36px; font-weight: 700; color: #4cc9f0; font-family: monospace; }
@@ -15,20 +45,73 @@ body { background: #0a0c10; color: #e8eaf0; font-family: system-ui, sans-serif; 
 .sync { font-size: 10px; color: #6b7280; text-align: right; margin-top: 2px; }
 .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #6b7280; margin-right: 4px; vertical-align: middle; }
 .dot.ok { background: #06d6a0; }
-.metrics { display: grid; grid-template-columns: repeat(6,1fr); gap: 10px; margin-bottom: 16px; }
-.metric { background: #12151c; border: 1px solid #252a38; border-radius: 10px; padding: 14px 12px; }
+
+/* ── BADGE MOTIVOS ── */
+.motivos-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  font-size: 10px;
+  color: #6b7280;
+}
+.motivo-tag {
+  background: rgba(255,71,87,.12);
+  border: 1px solid rgba(255,71,87,.3);
+  color: #FF4757;
+  border-radius: 20px;
+  padding: 2px 10px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+/* ── METRICS ── */
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(6,1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.metric {
+  background: #12151c;
+  border: 1px solid #252a38;
+  border-radius: 10px;
+  padding: 14px 12px;
+}
 .metric-label { font-size: 9px; color: #6b7280; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 6px; }
 .metric-val { font-size: 30px; font-weight: 700; line-height: 1; }
 .metric-sub { font-size: 10px; color: #6b7280; margin-top: 4px; }
+
+/* ── GRIDS ── */
 .row2 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px; }
 .row3 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.card { background: #12151c; border: 1px solid #252a38; border-radius: 10px; padding: 14px; }
-.card-title { font-size: 9px; color: #6b7280; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; border-bottom: 1px solid #1a1e28; padding-bottom: 8px; }
+
+/* ── CARDS ── */
+.card {
+  background: #12151c;
+  border: 1px solid #252a38;
+  border-radius: 10px;
+  padding: 14px;
+}
+.card-title {
+  font-size: 9px;
+  color: #6b7280;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #1a1e28;
+  padding-bottom: 8px;
+}
+
+/* ── BARS ── */
 .bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; }
 .bar-label { font-size: 12px; color: #e8eaf0; width: 150px; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bar-track { flex: 1; height: 10px; background: #1a1e28; border-radius: 5px; overflow: hidden; }
 .bar-fill { height: 100%; border-radius: 5px; }
 .bar-val { font-size: 12px; color: #6b7280; width: 40px; text-align: right; flex-shrink: 0; }
+
+/* ── ROWS ── */
 .op-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #1a1e28; }
 .op-row:last-child { border-bottom: none; }
 .op-avatar { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #fff; flex-shrink: 0; }
@@ -37,113 +120,166 @@ body { background: #0a0c10; color: #e8eaf0; font-family: system-ui, sans-serif; 
 .err-badge { background: rgba(255,71,87,.15); color: #FF4757; border: 1px solid rgba(255,71,87,.3); border-radius: 20px; padding: 2px 8px; font-size: 11px; font-weight: 700; }
 .ses-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid #1a1e28; }
 .ses-row:last-child { border-bottom: none; }
+
+/* ── PIE ── */
 .pie-wrap { position: relative; height: 160px; }
 .pie-legend { display: flex; gap: 10px; margin-top: 10px; font-size: 11px; color: #6b7280; flex-wrap: wrap; }
+
+/* ── MISC ── */
 .no-data { color: #6b7280; font-size: 12px; padding: 20px 0; text-align: center; }
+
+/* ── SCROLL INDICATOR ── */
+.scroll-indicator {
+  position: fixed;
+  bottom: 12px;
+  right: 14px;
+  background: rgba(124,58,237,.25);
+  border: 1px solid rgba(124,58,237,.4);
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 10px;
+  color: #7c3aed;
+  letter-spacing: 1px;
+  pointer-events: none;
+  z-index: 999;
+  transition: opacity .5s;
+}
 </style>
 </head>
 <body>
-<div class="header">
-  <div>
-    <div class="logo">Ros<span>-arC</span></div>
-    <div style="font-size:11px;color:#6b7280;margin-top:2px;">Dashboard rendimiento · Depósito ROSARC</div>
-  </div>
-  <div style="text-align:right">
-    <div class="clock" id="clk">--:--:--</div>
-    <div class="date-str" id="dt"></div>
-    <div class="sync"><span class="dot" id="dot"></span><span id="sync-txt">Conectando...</span></div>
-  </div>
-</div>
 
-<div class="metrics">
-  <div class="metric">
-    <div class="metric-label">Piq/min · mejor</div>
-    <div class="metric-val" style="color:#06d6a0" id="m-piqmin">—</div>
-    <div class="metric-sub" id="m-piqmin-sub">operario top</div>
-  </div>
-  <div class="metric">
-    <div class="metric-label">Piq/min · promedio</div>
-    <div class="metric-val" style="color:#4cc9f0" id="m-piqavg">—</div>
-    <div class="metric-sub">general del día</div>
-  </div>
-  <div class="metric">
-    <div class="metric-label">Efectividad</div>
-    <div class="metric-val" style="color:#ffd166" id="m-efect">—</div>
-    <div class="metric-sub">OK / total líneas</div>
-  </div>
-  <div class="metric">
-    <div class="metric-label">Tiempo prom · conso</div>
-    <div class="metric-val" style="color:#ff8c42" id="m-tiempo">—</div>
-    <div class="metric-sub">minutos promedio</div>
-  </div>
-  <div class="metric">
-    <div class="metric-label">Líneas procesadas</div>
-    <div class="metric-val" style="color:#7c3aed" id="m-lineas">—</div>
-    <div class="metric-sub">total acumulado</div>
-  </div>
-  <div class="metric">
-    <div class="metric-label">Errores · armadores</div>
-    <div class="metric-val" style="color:#FF4757" id="m-errs">—</div>
-    <div class="metric-sub">errores reales</div>
-  </div>
-</div>
+<div class="scroll-container" id="scrollEl">
 
-<div class="row2">
-  <div class="card">
-    <div class="card-title">Piqueos por minuto · operario</div>
-    <div id="piq-bars"><div class="no-data">Cargando...</div></div>
+  <div class="header">
+    <div>
+      <div class="logo">Ros<span>-arC</span></div>
+      <div style="font-size:11px;color:#6b7280;margin-top:2px;">Dashboard rendimiento · Depósito ROSARC</div>
+    </div>
+    <div style="text-align:right">
+      <div class="clock" id="clk">--:--:--</div>
+      <div class="date-str" id="dt"></div>
+      <div class="sync"><span class="dot" id="dot"></span><span id="sync-txt">Conectando...</span></div>
+    </div>
   </div>
-  <div class="card">
-    <div class="card-title">Distribución resultados</div>
-    <div class="pie-wrap"><canvas id="pieChart" role="img" aria-label="Distribución OK errores pendientes">Cargando...</canvas></div>
-    <div class="pie-legend" id="pie-legend"></div>
-  </div>
-  <div class="card">
-    <div class="card-title">Armador con más errores</div>
-    <div id="err-ops"><div class="no-data">Cargando...</div></div>
-  </div>
-</div>
 
-<div class="row3">
-  <div class="card">
-    <div class="card-title">Ranking · piqueos/min</div>
-    <div id="ranking"><div class="no-data">Cargando...</div></div>
+  <!-- Banner aclarando qué motivos cuentan como error -->
+  <div class="motivos-banner">
+    <span style="color:#9ca3af;">Errores contabilizados por motivo:</span>
+    <span class="motivo-tag">FALTANTE</span>
+    <span class="motivo-tag">CÓDIGO INCORRECTO</span>
+    <span class="motivo-tag">SOBRANTE</span>
   </div>
-  <div class="card">
-    <div class="card-title">Últimas sesiones</div>
-    <div id="sesiones"><div class="no-data">Cargando...</div></div>
+
+  <div class="metrics">
+    <div class="metric">
+      <div class="metric-label">Piq/min · mejor</div>
+      <div class="metric-val" style="color:#06d6a0" id="m-piqmin">—</div>
+      <div class="metric-sub" id="m-piqmin-sub">operario top</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Piq/min · promedio</div>
+      <div class="metric-val" style="color:#4cc9f0" id="m-piqavg">—</div>
+      <div class="metric-sub">general del día</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Efectividad</div>
+      <div class="metric-val" style="color:#ffd166" id="m-efect">—</div>
+      <div class="metric-sub">OK / total líneas</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Tiempo prom · conso</div>
+      <div class="metric-val" style="color:#ff8c42" id="m-tiempo">—</div>
+      <div class="metric-sub">minutos promedio</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Líneas procesadas</div>
+      <div class="metric-val" style="color:#7c3aed" id="m-lineas">—</div>
+      <div class="metric-sub">total acumulado</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Errores operario</div>
+      <div class="metric-val" style="color:#FF4757" id="m-errs">—</div>
+      <div class="metric-sub">faltante · incorrecto · sobrante</div>
+    </div>
   </div>
-</div>
+
+  <div class="row2">
+    <div class="card">
+      <div class="card-title">Piqueos por minuto · operario</div>
+      <div id="piq-bars"><div class="no-data">Cargando...</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Distribución resultados</div>
+      <div class="pie-wrap"><canvas id="pieChart" role="img" aria-label="Distribución OK errores pendientes">Cargando...</canvas></div>
+      <div class="pie-legend" id="pie-legend"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Armador con más errores</div>
+      <div id="err-ops"><div class="no-data">Cargando...</div></div>
+    </div>
+  </div>
+
+  <div class="row3">
+    <div class="card">
+      <div class="card-title">Ranking · piqueos/min</div>
+      <div id="ranking"><div class="no-data">Cargando...</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Últimas sesiones</div>
+      <div id="sesiones"><div class="no-data">Cargando...</div></div>
+    </div>
+  </div>
+
+  <!-- Espaciado extra para que el scroll llegue bien al final -->
+  <div style="height:40px;"></div>
+
+</div><!-- /scroll-container -->
+
+<!-- Indicador de estado del scroll -->
+<div class="scroll-indicator" id="scroll-ind">⬇ AUTO</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script>
 const SHEET = 'https://script.google.com/macros/s/AKfycbyFgyn7X_rDZ_qboQwoZatRFttzlvnYhmxWU55xlyQHVsJuKSU2QrTY7ZGx8lvqjOQ/exec';
 const COLORS = ['#FF4757','#2ED573','#1E90FF','#FFA502','#A55EEA','#00D2D3','#FF6B81','#26de81'];
 const MEDALS = ['🥇','🥈','🥉'];
+
+// ── Motivos que cuentan como ERROR DEL OPERARIO ──────────────────────────────
+const MOTIVOS_ERROR = ['faltante', 'código incorrecto', 'codigo incorrecto', 'sobrante'];
+function esErrorOperario(motivo) {
+  if (!motivo) return false;
+  return MOTIVOS_ERROR.includes(motivo.toLowerCase().trim());
+}
+
 let pieInst = null;
 
+// ── RELOJ ────────────────────────────────────────────────────────────────────
 function initClock() {
   function tick() {
     const n = new Date();
     document.getElementById('clk').textContent = n.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-    document.getElementById('dt').textContent = n.toLocaleDateString('es-AR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+    document.getElementById('dt').textContent  = n.toLocaleDateString('es-AR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
   }
-  tick(); setInterval(tick,1000);
+  tick(); setInterval(tick, 1000);
 }
 
-function setSync(ok,ts) {
+function setSync(ok, ts) {
   document.getElementById('dot').className = 'dot'+(ok?' ok':'');
   document.getElementById('sync-txt').textContent = ok ? 'Actualizado '+ts : 'Sin conexión';
 }
 
-function renderPie(ok,err,pend) {
+// ── RENDERS ──────────────────────────────────────────────────────────────────
+function renderPie(ok, err, pend) {
   const ctx = document.getElementById('pieChart').getContext('2d');
   if (pieInst) pieInst.destroy();
-  const total = ok+err+pend||1;
-  pieInst = new Chart(ctx,{
-    type:'doughnut',
-    data:{ labels:['OK','Errores','Pendientes'], datasets:[{ data:[ok,err,pend], backgroundColor:['#06d6a0','#FF4757','#6b7280'], borderWidth:0 }] },
-    options:{ responsive:true, maintainAspectRatio:false, cutout:'65%', plugins:{ legend:{ display:false } } }
+  const total = ok+err+pend || 1;
+  pieInst = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['OK','Errores','Pendientes'],
+      datasets: [{ data:[ok,err,pend], backgroundColor:['#06d6a0','#FF4757','#6b7280'], borderWidth:0 }]
+    },
+    options: { responsive:true, maintainAspectRatio:false, cutout:'65%', plugins:{ legend:{ display:false } } }
   });
   document.getElementById('pie-legend').innerHTML = [['#06d6a0','OK',ok],['#FF4757','Errores',err],['#6b7280','Pendientes',pend]]
     .map(([c,l,v])=>`<span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:2px;background:${c};display:inline-block;"></span>${l}: ${v} (${Math.round(v/total*100)}%)</span>`).join('');
@@ -152,7 +288,7 @@ function renderPie(ok,err,pend) {
 function renderBars(ops) {
   const cont = document.getElementById('piq-bars');
   if (!ops.length){cont.innerHTML='<div class="no-data">Sin datos</div>';return;}
-  const max = Math.max(...ops.map(o=>o.piqMin),0.1);
+  const max = Math.max(...ops.map(o=>o.piqMin), 0.1);
   cont.innerHTML = ops.map((op,i)=>{
     const pct = Math.round((op.piqMin/max)*100);
     const c = COLORS[i%COLORS.length];
@@ -189,7 +325,7 @@ function renderRanking(ops) {
 function renderErrOps(errMap, opArr) {
   const cont = document.getElementById('err-ops');
   const conErr = Object.values(errMap).filter(o=>o.errores>0).sort((a,b)=>b.errores-a.errores);
-  if (!conErr.length){cont.innerHTML='<div class="no-data">Sin errores registrados</div>';return;}
+  if (!conErr.length){cont.innerHTML='<div class="no-data">Sin errores operario registrados</div>';return;}
   cont.innerHTML = conErr.map((op)=>{
     const ci = opArr.findIndex(o=>o.nombre===op.nombre);
     const c = COLORS[Math.max(ci,0)%COLORS.length];
@@ -198,7 +334,7 @@ function renderErrOps(errMap, opArr) {
       <div class="op-avatar" style="background:${c};width:30px;height:30px;font-size:11px;">${op.nombre.charAt(0)}</div>
       <div style="flex:1;">
         <div style="font-size:13px;font-weight:600;">${op.nombre}</div>
-        <div style="font-size:10px;color:#6b7280;">${pct}% de sus líneas</div>
+        <div style="font-size:10px;color:#6b7280;">${pct}% de sus líneas · <span style="color:#ffa502;">${op.faltantes} falt</span> · <span style="color:#4cc9f0;">${op.incorrectos} inc</span> · <span style="color:#a55eea;">${op.sobrantes} sob</span></div>
       </div>
       <div class="err-badge">${op.errores} err</div>
     </div>`;
@@ -225,6 +361,7 @@ function renderSesiones(ses) {
   }).join('');
 }
 
+// ── CARGA DE DATOS ───────────────────────────────────────────────────────────
 async function cargar() {
   try {
     const [rRend, rCons] = await Promise.all([
@@ -235,36 +372,32 @@ async function cargar() {
     const filas = rRend.operarios || [];
     const cons  = rCons.consolidados || [];
 
-    // Agrupar operarios por nombre desde Rendimiento_Operarios
+    // Agrupar operarios desde Rendimiento_Operarios
     const opMap = {};
     let idx = 0;
     filas.forEach(f => {
-      if (!opMap[f.nombre]) {
-        opMap[f.nombre] = { nombre:f.nombre, piqTotal:0, durTotal:0, sesiones:0, colorIdx: idx++ };
-      }
+      if (!opMap[f.nombre]) opMap[f.nombre] = { nombre:f.nombre, piqTotal:0, durTotal:0, sesiones:0, colorIdx:idx++ };
       opMap[f.nombre].piqTotal += f.piqueos;
       opMap[f.nombre].durTotal += f.dur;
       opMap[f.nombre].sesiones++;
     });
-
     const opArr = Object.values(opMap).map(o=>({
       ...o,
       piqMin: o.durTotal>0 && o.piqTotal>0 ? o.piqTotal/o.durTotal : 0,
     }));
 
-    // ── Errores por ARMADOR — usar l.operario que ahora es el armador real
+    // ── Errores por ARMADOR ── solo Faltante / Código incorrecto / Sobrante
     const errMap = {};
     let totalOk=0, totalErr=0, totalPend=0, totalLineas=0;
     let totalDur=0, consDur=0;
 
     cons.forEach(c => {
-      const lines = c.lines||[];
+      const lines = c.lines || [];
       totalOk   += lines.filter(l=>l.estado==='ok').length;
       totalErr  += lines.filter(l=>l.estado==='error').length;
       totalPend += lines.filter(l=>!l.estado).length;
       totalLineas += lines.length;
 
-      // Calcular tiempo promedio
       if (c.totalTime) { totalDur += Math.round(c.totalTime/60000); consDur++; }
       else {
         const ends   = (c.activeOps||[]).map(o=>Number(o.endTime)||0).filter(x=>x>0);
@@ -275,13 +408,20 @@ async function cargar() {
         }
       }
 
-      // Errores por armador — l.operario es quien armó la línea
       lines.forEach(l => {
         const armador = l.operario || '—';
-        if (armador === '—' || !armador) return;
-        if (!errMap[armador]) errMap[armador] = { nombre:armador, errores:0, lineas:0 };
+        if (!armador || armador === '—') return;
+        if (!errMap[armador]) errMap[armador] = { nombre:armador, errores:0, lineas:0, faltantes:0, incorrectos:0, sobrantes:0 };
         errMap[armador].lineas++;
-        if (l.estado === 'error') errMap[armador].errores++;
+
+        // Solo contar si el motivo es uno de los tres errores del operario
+        if (l.estado === 'error' && esErrorOperario(l.motivo)) {
+          errMap[armador].errores++;
+          const m = (l.motivo||'').toLowerCase().trim();
+          if (m === 'faltante')                                         errMap[armador].faltantes++;
+          else if (m === 'código incorrecto' || m === 'codigo incorrecto') errMap[armador].incorrectos++;
+          else if (m === 'sobrante')                                    errMap[armador].sobrantes++;
+        }
       });
     });
 
@@ -293,7 +433,7 @@ async function cargar() {
 
     const efect = (totalOk+totalErr)>0 ? ((totalOk/(totalOk+totalErr))*100).toFixed(1)+'%' : '—';
     const tiempoProm = consDur>0 ? Math.round(totalDur/consDur)+' min' : '—';
-    const totalErrArmadores = Object.values(errMap).reduce((a,o)=>a+o.errores,0);
+    const totalErrOperarios = Object.values(errMap).reduce((a,o)=>a+o.errores,0);
 
     const opsConPiq = opArr.filter(o=>o.piqMin>0);
     const avgPiq = opsConPiq.length>0 ? opsConPiq.reduce((a,o)=>a+o.piqMin,0)/opsConPiq.length : 0;
@@ -305,7 +445,7 @@ async function cargar() {
     document.getElementById('m-efect').textContent      = efect;
     document.getElementById('m-tiempo').textContent     = tiempoProm;
     document.getElementById('m-lineas').textContent     = totalLineas;
-    document.getElementById('m-errs').textContent       = totalErrArmadores;
+    document.getElementById('m-errs').textContent       = totalErrOperarios;
 
     renderPie(totalOk, totalErr, totalPend);
     renderBars(opArr);
@@ -329,9 +469,67 @@ async function cargar() {
   }
 }
 
+// ── AUTOSCROLL TV ────────────────────────────────────────────────────────────
+// Velocidad: px por frame (requestAnimationFrame ~60fps)
+// Ajustá SCROLL_SPEED si querés más lento / rápido (recomendado: 0.4 – 1.2)
+const SCROLL_SPEED  = 5;   // px por frame
+const PAUSE_TOP_MS  = 4000;  // pausa al llegar arriba (ms)
+const PAUSE_BOT_MS  = 3000;  // pausa al llegar abajo  (ms)
+
+const scrollEl = document.getElementById('scrollEl');
+const indEl    = document.getElementById('scroll-ind');
+let direction  = 1;   // 1 = hacia abajo, -1 = hacia arriba
+let paused     = false;
+let userTouched = false;
+let touchTimer  = null;
+let rafId       = null;
+
+function pauseScroll(dir, ms) {
+  paused = true;
+  indEl.textContent = dir > 0 ? '⬇ AUTO' : '⬆ AUTO';
+  setTimeout(() => { paused = false; }, ms);
+}
+
+function autoScroll() {
+  if (!paused && !userTouched) {
+    scrollEl.scrollTop += SCROLL_SPEED * direction;
+
+    const maxScroll = scrollEl.scrollHeight - scrollEl.clientHeight;
+    if (direction === 1 && scrollEl.scrollTop >= maxScroll - 1) {
+      direction = -1;
+      indEl.textContent = '⬆ AUTO';
+      pauseScroll(-1, PAUSE_BOT_MS);
+    } else if (direction === -1 && scrollEl.scrollTop <= 0) {
+      direction = 1;
+      indEl.textContent = '⬇ AUTO';
+      pauseScroll(1, PAUSE_TOP_MS);
+    }
+  }
+  rafId = requestAnimationFrame(autoScroll);
+}
+
+// Si el usuario toca/scroll manual → pausa 8s
+scrollEl.addEventListener('scroll', () => {
+  if (userTouched) return;
+  userTouched = true;
+  indEl.textContent = '⏸ MANUAL';
+  clearTimeout(touchTimer);
+  touchTimer = setTimeout(() => {
+    userTouched = false;
+    indEl.textContent = direction > 0 ? '⬇ AUTO' : '⬆ AUTO';
+  }, 8000);
+}, { passive: true });
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
 initClock();
 cargar();
 setInterval(cargar, 30000);
+
+// Arranca el autoscroll después de 2s para que carguen los datos
+setTimeout(() => {
+  pauseScroll(1, PAUSE_TOP_MS); // pausa inicial arriba
+  rafId = requestAnimationFrame(autoScroll);
+}, 2000);
 </script>
 </body>
 </html>
