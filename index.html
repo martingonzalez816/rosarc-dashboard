@@ -21,13 +21,14 @@ body {
 /* ── SCROLL CONTAINER ── */
 .scroll-container {
   height: 100vh;
-  overflow-y: scroll;
-  scroll-behavior: smooth;
-  padding: 16px;
-  /* Ocultar scrollbar visualmente pero mantener funcional */
-  scrollbar-width: none;
+  overflow: hidden;   /* oculta el contenido que sale de pantalla */
+  position: relative;
 }
-.scroll-container::-webkit-scrollbar { display: none; }
+/* El inner se mueve con translateY */
+.inner-content {
+  padding: 16px;
+  will-change: transform;
+}
 
 /* ── HEADER ── */
 .header {
@@ -148,7 +149,8 @@ body {
 </head>
 <body>
 
-<div class="scroll-container" id="scrollEl">
+<div class="scroll-container">
+<div class="inner-content" id="inner-content">
 
   <div class="header">
     <div>
@@ -230,9 +232,10 @@ body {
     </div>
   </div>
 
-  <!-- Espaciado extra para que el scroll llegue bien al final -->
-  <div style="height:40px;"></div>
+  <!-- Espaciado extra al final -->
+  <div style="height:60px;"></div>
 
+</div><!-- /inner-content -->
 </div><!-- /scroll-container -->
 
 <!-- Indicador de estado del scroll -->
@@ -469,67 +472,71 @@ async function cargar() {
   }
 }
 
-// ── AUTOSCROLL TV ────────────────────────────────────────────────────────────
-// Velocidad: px por frame (requestAnimationFrame ~60fps)
-// Ajustá SCROLL_SPEED si querés más lento / rápido (recomendado: 0.4 – 1.2)
-const SCROLL_SPEED  = 5;   // px por frame
-const PAUSE_TOP_MS  = 4000;  // pausa al llegar arriba (ms)
-const PAUSE_BOT_MS  = 3000;  // pausa al llegar abajo  (ms)
+// ── AUTOSCROLL TV ─────────────────────────────────────────────────────────────
+// Mueve el inner-content con translateY — funciona aunque todo entre en pantalla.
+// PX_PER_SEC: cuántos px baja/sube por segundo. Ajustá a gusto.
+const PX_PER_SEC   = 80;    // velocidad (px/s) — subí este número para ir más rápido
+const PAUSE_TOP_MS = 3000;  // pausa al llegar arriba (ms)
+const PAUSE_BOT_MS = 2500;  // pausa al llegar abajo  (ms)
 
-const scrollEl = document.getElementById('scrollEl');
-const indEl    = document.getElementById('scroll-ind');
-let direction  = 1;   // 1 = hacia abajo, -1 = hacia arriba
-let paused     = false;
-let userTouched = false;
-let touchTimer  = null;
-let rafId       = null;
+const indEl   = document.getElementById('scroll-ind');
+const inner   = document.getElementById('inner-content');
 
-function pauseScroll(dir, ms) {
+let offsetY   = 0;
+let direction = 1;      // 1 = baja, -1 = sube
+let paused    = false;
+let lastTime  = null;
+
+function getMaxOffset() {
+  return Math.max(0, inner.offsetHeight - window.innerHeight);
+}
+
+function doPause(dir, ms) {
   paused = true;
   indEl.textContent = dir > 0 ? '⬇ AUTO' : '⬆ AUTO';
-  setTimeout(() => { paused = false; }, ms);
+  setTimeout(() => { paused = false; lastTime = null; }, ms);
 }
 
-function autoScroll() {
-  if (!paused && !userTouched) {
-    scrollEl.scrollTop += SCROLL_SPEED * direction;
+function autoScroll(ts) {
+  if (!paused) {
+    if (lastTime !== null) {
+      const delta = (ts - lastTime) / 1000;
+      offsetY += PX_PER_SEC * delta * direction;
+      const max = getMaxOffset();
 
-    const maxScroll = scrollEl.scrollHeight - scrollEl.clientHeight;
-    if (direction === 1 && scrollEl.scrollTop >= maxScroll - 1) {
-      direction = -1;
-      indEl.textContent = '⬆ AUTO';
-      pauseScroll(-1, PAUSE_BOT_MS);
-    } else if (direction === -1 && scrollEl.scrollTop <= 0) {
-      direction = 1;
-      indEl.textContent = '⬇ AUTO';
-      pauseScroll(1, PAUSE_TOP_MS);
+      if (direction === 1 && offsetY >= max) {
+        offsetY = max;
+        direction = -1;
+        inner.style.transform = `translateY(${-offsetY}px)`;
+        doPause(-1, PAUSE_BOT_MS);
+        requestAnimationFrame(autoScroll);
+        return;
+      }
+      if (direction === -1 && offsetY <= 0) {
+        offsetY = 0;
+        direction = 1;
+        inner.style.transform = `translateY(0px)`;
+        doPause(1, PAUSE_TOP_MS);
+        requestAnimationFrame(autoScroll);
+        return;
+      }
+      inner.style.transform = `translateY(${-offsetY}px)`;
     }
+    lastTime = ts;
   }
-  rafId = requestAnimationFrame(autoScroll);
+  requestAnimationFrame(autoScroll);
 }
 
-// Si el usuario toca/scroll manual → pausa 8s
-scrollEl.addEventListener('scroll', () => {
-  if (userTouched) return;
-  userTouched = true;
-  indEl.textContent = '⏸ MANUAL';
-  clearTimeout(touchTimer);
-  touchTimer = setTimeout(() => {
-    userTouched = false;
-    indEl.textContent = direction > 0 ? '⬇ AUTO' : '⬆ AUTO';
-  }, 8000);
-}, { passive: true });
-
-// ── INIT ─────────────────────────────────────────────────────────────────────
+// ── INIT ──────────────────────────────────────────────────────────────────────
 initClock();
 cargar();
 setInterval(cargar, 30000);
 
-// Arranca el autoscroll después de 2s para que carguen los datos
+// Arranca 3s después para que los datos carguen
 setTimeout(() => {
-  pauseScroll(1, PAUSE_TOP_MS); // pausa inicial arriba
-  rafId = requestAnimationFrame(autoScroll);
-}, 2000);
+  doPause(1, PAUSE_TOP_MS);
+  requestAnimationFrame(autoScroll);
+}, 3000);
 </script>
 </body>
 </html>
