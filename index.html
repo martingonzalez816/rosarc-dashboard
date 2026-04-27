@@ -576,12 +576,6 @@ function cargarReparto(){
     renderReparto(d);
   }).catch(function(e){console.error('Reparto:',e);});
 }
-  }
-  fj(SHEET_REP+'?accion=leer_reparto').then(function(d){
-    if(d.error){console.warn('Reparto:',d.error);return;}
-    renderReparto(d);
-  }).catch(function(e){console.error('Reparto:',e);});
-}
 
 /* ===== INIT ===== */
 initClock();
