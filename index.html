@@ -571,9 +571,11 @@ function cargarCert(){
 }
 
 function cargarReparto(){
-  if(SHEET_REP==='https://script.google.com/macros/s/AKfycbzIe23GAWwTalMcZojOJAS4MhuzGsiuKm1QXYu2RVcWOQ9YETTvX3AztGi6_sNuaXQ/exec'){
-    document.getElementById('rep-tbody').innerHTML='<tr><td colspan="13" class="no-data">&#9888; Configurar SHEET_REP con URL del Apps Script de Reparto</td></tr>';
-    return;
+  fj(SHEET_REP+'?accion=leer_reparto').then(function(d){
+    if(d.error){console.warn('Reparto:',d.error);return;}
+    renderReparto(d);
+  }).catch(function(e){console.error('Reparto:',e);});
+}
   }
   fj(SHEET_REP+'?accion=leer_reparto').then(function(d){
     if(d.error){console.warn('Reparto:',d.error);return;}
